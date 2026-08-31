@@ -10,7 +10,7 @@ import openpyxl
 # --- 1. CONFIGURACIÓN DE CLIENTES ---
 CONFIG_CLIENTES = {
     "Carl's Jr": {
-        "logo": "logos/CJ.png", 
+        "logo": "logos/cj.png", 
         "color_principal": "#E31837", 
         "color_secundario": "#FFC82C", 
         "logo_height": "140px" 
