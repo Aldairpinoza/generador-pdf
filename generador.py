@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import base64
-from weasyprint import HTML
+from xhtml2pdf import pisa
 import datetime
 import io
 import openpyxl
@@ -400,7 +400,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
             """
             
             pdf_bytes = io.BytesIO()
-            HTML(string=html_template).write_pdf(pdf_bytes)
+            pisa_status = pisa.CreatePDF(html_template, dest=pdf_bytes)
             
         st.success(f"¡PDF generado con éxito! Se procesaron {total_pantallas} registros.")
         st.download_button(
