@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import base64
-from xhtml2pdf import pisa
+from weasyprint import HTML # Cambia a "from xhtml2pdf import pisa" si seguiste con la otra librería
 import datetime
 import io
 import openpyxl
@@ -10,7 +10,7 @@ import openpyxl
 # --- 1. CONFIGURACIÓN DE CLIENTES ---
 CONFIG_CLIENTES = {
     "Carl's Jr": {
-        "logo": "logos/cj.png", 
+        "logo": "logos/CJ.png", 
         "color_principal": "#E31837", 
         "color_secundario": "#FFC82C", 
         "logo_height": "140px" 
@@ -39,9 +39,13 @@ CONFIG_CLIENTES = {
     },
     "OMNIDATA": {
         "logo": "logos/omnidata.png", 
-        "color_principal": "#0056b3", 
-        "color_secundario": "#003d82",
-        "logo_height": "140px" 
+        "color_principal": "#666666", 
+        "color_secundario": "#FFFFFF", 
+        "color_tabla": "#333333", 
+        "logo_height": "140px",
+        "texto_oscuro": True, 
+        "fecha_oscura": True, 
+        "header_bg": "linear-gradient(135deg, #666666 0%, #FFFFFF 100%)"
     },
     "Andares": {
         "logo": "logos/andares.png", 
@@ -122,23 +126,26 @@ CONFIG_CLIENTES = {
         "fecha_oscura": True, 
         "header_bg": "linear-gradient(135deg, #702082 0%, #FFFFFF 100%)"
     },
-    # ACTUALIZADO: Perfil para PH con Amarillo y Café
     "PH": {
         "logo": "logos/ph.png", 
-        "color_principal": "#FFCC00", # Amarillo
-        "color_secundario": "#4A2E15", # Café oscuro
-        "color_tabla": "#4A2E15", # Tabla en café para contraste
+        "color_principal": "#FFCC00", 
+        "color_secundario": "#4A2E15", 
+        "color_tabla": "#4A2E15", 
         "logo_height": "140px", 
-        "texto_oscuro": True, # Texto oscuro sobre la zona amarilla
-        "fecha_oscura": False, # Texto blanco/claro sobre la zona café
+        "texto_oscuro": True, 
+        "fecha_oscura": False, 
         "header_bg": "linear-gradient(135deg, #FFCC00 0%, #4A2E15 100%)"
     }
 }
 
 def get_base64_image(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as img_file:
-            ext = file_path.split('.')[-1].lower()
+    # Asegura la ruta correcta en la nube
+    base_dir = os.path.dirname(__file__) if "__file__" in locals() else os.getcwd()
+    full_path = os.path.join(base_dir, file_path)
+    
+    if os.path.exists(full_path):
+        with open(full_path, "rb") as img_file:
+            ext = full_path.split('.')[-1].lower()
             if ext == 'svg':
                 mime = "image/svg+xml"
             elif ext in ['jpg', 'jpeg']:
@@ -148,6 +155,8 @@ def get_base64_image(file_path):
                 
             b64_str = base64.b64encode(img_file.read()).decode('utf-8')
             return f"data:{mime};base64,{b64_str}"
+    else:
+        print(f"⚠️ Imagen NO encontrada: {full_path}")
     return ""
 
 st.set_page_config(page_title="Generador de PDFs", page_icon="📄")
@@ -158,6 +167,13 @@ opciones_menu = ["-- Selecciona un cliente --"] + list(CONFIG_CLIENTES.keys())
 cliente_seleccionado = st.selectbox("1. Selecciona el cliente:", opciones_menu)
 
 archivo_subido = st.file_uploader("2. Sube el archivo Excel aquí:", type=["xlsx", "xls"])
+
+# ---> NUEVO: Widget de calendario para seleccionar la fecha <---
+fecha_seleccionada = st.date_input(
+    "3. Selecciona la fecha para el reporte:", 
+    value=datetime.date.today(), 
+    format="DD/MM/YYYY"
+)
 
 if st.button("Procesar y Generar PDF", type="primary"):
     if cliente_seleccionado == "-- Selecciona un cliente --":
@@ -180,7 +196,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
             color_tabla = datos_cliente.get("color_tabla", color_header) 
             alto_logo = datos_cliente.get("logo_height", "140px") 
             
-            if color_tabla == "#000000" or color_tabla == "#1a1a1a" or color_tabla == "#515151":
+            if color_tabla == "#000000" or color_tabla == "#1a1a1a" or color_tabla == "#515151" or color_tabla == "#333333":
                 color_alerta_final = "#D97706" 
             else:
                 color_alerta_final = color_header 
@@ -195,11 +211,6 @@ if st.button("Procesar y Generar PDF", type="primary"):
                 try:
                     wb_load = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
                     ws_load = wb_load.active
-                    
-                    theme_colors = {
-                        4: "#4472C4", 5: "#ED7D31", 6: "#A5A5A5", 
-                        7: "#FFC000", 8: "#5B9BD5", 9: "#70AD47"  
-                    }
                     
                     for r_idx, row in enumerate(ws_load.iter_rows()):
                         for c_idx, cell in enumerate(row):
@@ -286,7 +297,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
             
             color_fecha = "#333333" if fecha_oscura else "rgba(255, 255, 255, 0.9)"
             shadow_fecha = "none" if fecha_oscura else "1px 1px 2px rgba(0,0,0,0.5)"
-            fecha_actual = datetime.date.today().strftime('%d/%m/%Y')
+            
+            # ---> NUEVO: Formateamos la fecha seleccionada en el calendario <---
+            fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
             html_template = f"""
             <!DOCTYPE html>
@@ -400,7 +413,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
             """
             
             pdf_bytes = io.BytesIO()
-            pisa_status = pisa.CreatePDF(html_template, dest=pdf_bytes)
+            HTML(string=html_template).write_pdf(pdf_bytes)
             
         st.success(f"¡PDF generado con éxito! Se procesaron {total_pantallas} registros.")
         st.download_button(
