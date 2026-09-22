@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import base64
-from weasyprint import HTML # Cambia a "from xhtml2pdf import pisa" si seguiste con la otra librería
+from xhtml2pdf import pisa
 import datetime
 import io
 import openpyxl
@@ -139,7 +139,6 @@ CONFIG_CLIENTES = {
 }
 
 def get_base64_image(file_path):
-    # Asegura la ruta correcta en la nube
     base_dir = os.path.dirname(__file__) if "__file__" in locals() else os.getcwd()
     full_path = os.path.join(base_dir, file_path)
     
@@ -155,8 +154,6 @@ def get_base64_image(file_path):
                 
             b64_str = base64.b64encode(img_file.read()).decode('utf-8')
             return f"data:{mime};base64,{b64_str}"
-    else:
-        print(f"⚠️ Imagen NO encontrada: {full_path}")
     return ""
 
 st.set_page_config(page_title="Generador de PDFs", page_icon="📄")
@@ -168,7 +165,7 @@ cliente_seleccionado = st.selectbox("1. Selecciona el cliente:", opciones_menu)
 
 archivo_subido = st.file_uploader("2. Sube el archivo Excel aquí:", type=["xlsx", "xls"])
 
-# ---> NUEVO: Widget de calendario para seleccionar la fecha <---
+# Seleccionar fecha del reporte
 fecha_seleccionada = st.date_input(
     "3. Selecciona la fecha para el reporte:", 
     value=datetime.date.today(), 
@@ -182,7 +179,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
         st.error("⚠️ Por favor, sube un archivo Excel.")
     else:
         if archivo_subido.name.lower().endswith('.xls'):
-            st.warning("⚠️ **AVISO IMPORTANTE:** Subiste un archivo con formato antiguo (`.xls`). El sistema no podrá detectar los textos de colores. Guarda el archivo como 'Libro de Excel (.xlsx)' para conservar los colores.")
+            st.warning("⚠️ **AVISO IMPORTANTE:** Subiste un archivo con formato antiguo (`.xls`). Guarda como `.xlsx` para conservar colores.")
             
         with st.spinner("Aplicando diseño corporativo y leyendo el archivo..."):
             
@@ -196,13 +193,13 @@ if st.button("Procesar y Generar PDF", type="primary"):
             color_tabla = datos_cliente.get("color_tabla", color_header) 
             alto_logo = datos_cliente.get("logo_height", "140px") 
             
-            if color_tabla == "#000000" or color_tabla == "#1a1a1a" or color_tabla == "#515151" or color_tabla == "#333333":
+            if color_tabla in ["#000000", "#1a1a1a", "#515151", "#333333"]:
                 color_alerta_final = "#D97706" 
             else:
                 color_alerta_final = color_header 
             
-            img_tag_cliente = f'<img src="{logo_cliente}" style="height: {alto_logo}; background: transparent !important; display: block; margin: 0 auto;">' if logo_cliente else ''
-            img_tag_admira = f'<img src="{logo_admira}" style="height: 55px; margin-bottom: 2px; background: transparent !important; display: block; margin-left: auto;">' if logo_admira else ''
+            img_tag_cliente = f'<img src="{logo_cliente}" style="height: {alto_logo}; display: block; margin: 0 auto;">' if logo_cliente else ''
+            img_tag_admira = f'<img src="{logo_admira}" style="height: 55px; display: block; margin-left: auto;">' if logo_admira else ''
 
             file_bytes = archivo_subido.read()
             
@@ -233,7 +230,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
                                 
                                 if is_alert:
                                     alert_map.add((r_idx, c_idx))
-                except Exception as e:
+                except Exception:
                     pass
             
             try:
@@ -265,10 +262,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
             total_pantallas = len(df)
             indices_columnas_reales = [columnas_originales.index(col) for col in df.columns]
             
-            encabezados_html = ""
-            for col in df.columns:
-                if "Unnamed" not in str(col):
-                    encabezados_html += f"<th>{str(col).upper()}</th>"
+            encabezados_html = "".join([f"<th>{str(col).upper()}</th>" for col in df.columns if "Unnamed" not in str(col)])
             
             filas_html = ""
             for offset, (df_row_idx, row) in enumerate(df.iterrows()):
@@ -290,15 +284,13 @@ if st.button("Procesar y Generar PDF", type="primary"):
             fecha_oscura = datos_cliente.get("fecha_oscura", False)
             
             titulo_color = "#111111" if texto_oscuro else "rgba(255, 255, 255, 0.9)"
-            tabla_texto_color = "white"
-            
             badge_bg = "rgba(0, 0, 0, 0.06)" if texto_oscuro else "rgba(255, 255, 255, 0.15)"
             badge_border = "rgba(0, 0, 0, 0.15)" if texto_oscuro else "rgba(255, 255, 255, 0.3)"
             
             color_fecha = "#333333" if fecha_oscura else "rgba(255, 255, 255, 0.9)"
             shadow_fecha = "none" if fecha_oscura else "1px 1px 2px rgba(0,0,0,0.5)"
             
-            # ---> NUEVO: Formateamos la fecha seleccionada en el calendario <---
+            # Formatear la fecha elegida en el selector
             fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
             html_template = f"""
@@ -307,75 +299,53 @@ if st.button("Procesar y Generar PDF", type="primary"):
             <head>
                 <meta charset="utf-8">
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
-                    
                     @page {{ size: A4 landscape; margin: 0; }}
-                    
-                    body {{ font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; color: #333; background-color: #FAFAFA; }}
+                    body {{ font-family: Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: #333; background-color: #FAFAFA; }}
                     
                     .header-container {{ 
-                        background: {fondo_custom};
+                        background-color: {color_header};
                         width: 100%; 
-                        padding: 6mm 15mm; 
+                        padding: 15px 30px; 
                         box-sizing: border-box; 
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                     }}
                     .header-table {{ width: 100%; border: none; }}
                     .header-table td {{ border: none; padding: 0; color: white; vertical-align: middle; }}
                     
-                    .left-block {{
-                        display: inline-block;
-                        text-align: center;
-                    }}
+                    .left-block {{ display: inline-block; text-align: center; }}
                     
                     .badge-total {{
                         background-color: {badge_bg}; 
                         color: {titulo_color};
                         padding: 4px 12px;
                         border-radius: 12px;
-                        font-size: 8.5pt;
-                        font-weight: 600;
+                        font-size: 11px;
+                        font-weight: bold;
                         display: inline-block;
                         border: 1px solid {badge_border};
-                        letter-spacing: 0.5px;
                     }}
                     
-                    .content {{ padding: 6mm 15mm; }}
-                    
-                    .table-wrapper {{
-                        border-radius: 8px;
-                        overflow: hidden;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                        background-color: white;
-                    }}
+                    .content {{ padding: 20px 30px; }}
                     
                     .data-table {{ 
                         width: 100%; 
                         border-collapse: collapse; 
-                        border-style: hidden; 
                     }}
                     
                     .data-table th {{ 
                         background-color: {color_tabla}; 
-                        color: {tabla_texto_color}; 
+                        color: white; 
                         padding: 8px 6px; 
-                        font-size: 7.5pt; 
+                        font-size: 10px; 
                         text-align: left; 
-                        font-weight: 700;
-                        border-right: 1px solid rgba(255,255,255,0.2); 
+                        font-weight: bold;
                     }}
-                    .data-table th:last-child {{ border-right: none; }}
                     
                     .data-table td {{ 
                         padding: 6px; 
-                        font-size: 7.5pt; 
+                        font-size: 10px; 
                         border: 1px solid #E5E7EB; 
                         color: #4b5563; 
-                        font-weight: 400;
                     }}
-                    
-                    .data-table tr:nth-child(even) td {{ background-color: #F9FAFB; }}
-                    .data-table tr:nth-child(odd) td {{ background-color: #FFFFFF; }}
                 </style>
             </head>
             <body>
@@ -390,30 +360,28 @@ if st.button("Procesar y Generar PDF", type="primary"):
                             </td>
                             <td style="width: 30%; text-align: right; vertical-align: top;">
                                 {img_tag_admira}
-                                <div style="font-size: 9pt; font-weight: 500; color: {color_fecha}; margin-top: 3px; text-shadow: {shadow_fecha};">Fecha de informe: {fecha_actual}</div>
+                                <div style="font-size: 12px; font-weight: bold; color: {color_fecha}; margin-top: 5px;">Fecha de informe: {fecha_actual}</div>
                             </td>
                         </tr>
                     </table>
                 </div>
                 
                 <div class="content">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>{encabezados_html}</tr>
-                            </thead>
-                            <tbody>
-                                {filas_html}
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>{encabezados_html}</tr>
+                        </thead>
+                        <tbody>
+                            {filas_html}
+                        </tbody>
+                    </table>
                 </div>
             </body>
             </html>
             """
             
             pdf_bytes = io.BytesIO()
-            HTML(string=html_template).write_pdf(pdf_bytes)
+            pisa_status = pisa.CreatePDF(html_template, dest=pdf_bytes)
             
         st.success(f"¡PDF generado con éxito! Se procesaron {total_pantallas} registros.")
         st.download_button(
