@@ -134,13 +134,10 @@ CONFIG_CLIENTES = {
     }
 }
 
-# ---> FUNCIÓN CORREGIDA PARA ENCONTRAR IMÁGENES EN LA NUBE <---
 def get_base64_image(file_path):
-    # Intentar obtener la ruta absoluta basada en el directorio actual
     base_dir = os.path.dirname(__file__) if "__file__" in locals() else os.getcwd()
     full_path = os.path.join(base_dir, file_path)
     
-    # Si no existe en la ruta calculada, intentamos con la ruta relativa directa
     if not os.path.exists(full_path):
         full_path = file_path
 
@@ -156,9 +153,6 @@ def get_base64_image(file_path):
                 
             b64_str = base64.b64encode(img_file.read()).decode('utf-8')
             return f"data:{mime};base64,{b64_str}"
-    else:
-        # Imprime error en consola para depuración si no halla la imagen
-        print(f"Error: Imagen no encontrada en {full_path}")
     return ""
 
 st.set_page_config(page_title="Generador de PDFs", page_icon="📄")
@@ -197,8 +191,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
             color_tabla = datos_cliente.get("color_tabla", color_header) 
             alto_logo = datos_cliente.get("logo_height", "140px") 
             
-            if color_tabla == "#000000" or color_tabla == "#1a1a1a" or color_tabla == "#515151":
-                color_alerta_final = "#D97706" 
+            # Rojo limpio de alerta para encabezados oscuros
+            if color_tabla in ["#000000", "#1a1a1a", "#515151", "#333333"]:
+                color_alerta_final = "#DC2626" 
             else:
                 color_alerta_final = color_header 
             
@@ -213,11 +208,6 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     wb_load = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
                     ws_load = wb_load.active
                     
-                    theme_colors = {
-                        4: "#4472C4", 5: "#ED7D31", 6: "#A5A5A5", 
-                        7: "#FFC000", 8: "#5B9BD5", 9: "#70AD47"  
-                    }
-                    
                     for r_idx, row in enumerate(ws_load.iter_rows()):
                         for c_idx, cell in enumerate(row):
                             if cell.font and cell.font.color:
@@ -230,16 +220,18 @@ if st.button("Procesar y Generar PDF", type="primary"):
                                     if len(rgb) == 8: hex_val = "#" + rgb[2:]
                                     elif len(rgb) == 6: hex_val = "#" + rgb
                                     
-                                    if hex_val and hex_val.upper() not in ["#000000", "#FFFFFF", "#00000000"]:
+                                    # Filtramos colores negros, grises oscuros y blancos estándar de Excel
+                                    if hex_val and hex_val.upper() not in ["#000000", "#FFFFFF", "#00000000", "#333333", "#4B5563", "#111111", "#515151"]:
                                         is_alert = True
                                         
                                 elif color_obj.type == 'theme':
-                                    if color_obj.theme not in [0, 1]:
+                                    # Temas 0, 1, 2, 3 son los colores neutros predeterminados de Excel
+                                    if color_obj.theme not in [0, 1, 2, 3]:
                                         is_alert = True
                                 
                                 if is_alert:
                                     alert_map.add((r_idx, c_idx))
-                except Exception as e:
+                except Exception:
                     pass
             
             try:
@@ -306,7 +298,6 @@ if st.button("Procesar y Generar PDF", type="primary"):
             
             fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
-            # ---> CSS MODIFICADO: ELIMINADOS LOS BORDES GRISES Y SOMBRAS DE LA TABLA <---
             html_template = f"""
             <!DOCTYPE html>
             <html>
@@ -351,8 +342,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     .table-wrapper {{
                         border-radius: 8px;
                         overflow: hidden;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         background-color: white;
-                        /* Eliminamos box-shadow para quitar bordes raros */
+                        border: 1px solid #E5E7EB;
                     }}
                     
                     .data-table {{ 
@@ -374,8 +366,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     .data-table td {{ 
                         padding: 6px; 
                         font-size: 7.5pt; 
-                        /* Eliminamos el borde gris: border: 1px solid #E5E7EB; */
-                        border: none;
+                        border: 1px solid #E5E7EB; 
                         color: #4b5563; 
                         font-weight: 400;
                     }}
