@@ -122,15 +122,14 @@ CONFIG_CLIENTES = {
         "fecha_oscura": True, 
         "header_bg": "linear-gradient(135deg, #702082 0%, #FFFFFF 100%)"
     },
-    # ACTUALIZADO: Perfil para PH con Amarillo y Café
     "PH": {
         "logo": "logos/ph.png", 
-        "color_principal": "#FFCC00", # Amarillo
-        "color_secundario": "#4A2E15", # Café oscuro
-        "color_tabla": "#4A2E15", # Tabla en café para contraste
+        "color_principal": "#FFCC00", 
+        "color_secundario": "#4A2E15", 
+        "color_tabla": "#4A2E15", 
         "logo_height": "140px", 
-        "texto_oscuro": True, # Texto oscuro sobre la zona amarilla
-        "fecha_oscura": False, # Texto blanco/claro sobre la zona café
+        "texto_oscuro": True, 
+        "fecha_oscura": False, 
         "header_bg": "linear-gradient(135deg, #FFCC00 0%, #4A2E15 100%)"
     }
 }
@@ -158,6 +157,13 @@ opciones_menu = ["-- Selecciona un cliente --"] + list(CONFIG_CLIENTES.keys())
 cliente_seleccionado = st.selectbox("1. Selecciona el cliente:", opciones_menu)
 
 archivo_subido = st.file_uploader("2. Sube el archivo Excel aquí:", type=["xlsx", "xls"])
+
+# ---> AQUÍ AGREGAMOS LA ÚNICA MODIFICACIÓN: EL SELECTOR DE FECHA <---
+fecha_seleccionada = st.date_input(
+    "3. Selecciona la fecha para el reporte:", 
+    value=datetime.date.today(), 
+    format="DD/MM/YYYY"
+)
 
 if st.button("Procesar y Generar PDF", type="primary"):
     if cliente_seleccionado == "-- Selecciona un cliente --":
@@ -286,7 +292,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
             
             color_fecha = "#333333" if fecha_oscura else "rgba(255, 255, 255, 0.9)"
             shadow_fecha = "none" if fecha_oscura else "1px 1px 2px rgba(0,0,0,0.5)"
-            fecha_actual = datetime.date.today().strftime('%d/%m/%Y')
+            
+            # ---> AQUÍ USAMOS LA FECHA DEL SELECTOR EN VEZ DE LA FECHA DE HOY <---
+            fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
             html_template = f"""
             <!DOCTYPE html>
