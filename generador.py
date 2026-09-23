@@ -122,23 +122,31 @@ CONFIG_CLIENTES = {
         "fecha_oscura": True, 
         "header_bg": "linear-gradient(135deg, #702082 0%, #FFFFFF 100%)"
     },
-    # ACTUALIZADO: Perfil para PH con Amarillo y Café
     "PH": {
         "logo": "logos/ph.png", 
-        "color_principal": "#FFCC00", # Amarillo
-        "color_secundario": "#4A2E15", # Café oscuro
-        "color_tabla": "#4A2E15", # Tabla en café para contraste
+        "color_principal": "#FFCC00", 
+        "color_secundario": "#4A2E15", 
+        "color_tabla": "#4A2E15", 
         "logo_height": "140px", 
-        "texto_oscuro": True, # Texto oscuro sobre la zona amarilla
-        "fecha_oscura": False, # Texto blanco/claro sobre la zona café
+        "texto_oscuro": True, 
+        "fecha_oscura": False, 
         "header_bg": "linear-gradient(135deg, #FFCC00 0%, #4A2E15 100%)"
     }
 }
 
+# ---> FUNCIÓN CORREGIDA PARA ENCONTRAR IMÁGENES EN LA NUBE <---
 def get_base64_image(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as img_file:
-            ext = file_path.split('.')[-1].lower()
+    # Intentar obtener la ruta absoluta basada en el directorio actual
+    base_dir = os.path.dirname(__file__) if "__file__" in locals() else os.getcwd()
+    full_path = os.path.join(base_dir, file_path)
+    
+    # Si no existe en la ruta calculada, intentamos con la ruta relativa directa
+    if not os.path.exists(full_path):
+        full_path = file_path
+
+    if os.path.exists(full_path):
+        with open(full_path, "rb") as img_file:
+            ext = full_path.split('.')[-1].lower()
             if ext == 'svg':
                 mime = "image/svg+xml"
             elif ext in ['jpg', 'jpeg']:
@@ -148,6 +156,9 @@ def get_base64_image(file_path):
                 
             b64_str = base64.b64encode(img_file.read()).decode('utf-8')
             return f"data:{mime};base64,{b64_str}"
+    else:
+        # Imprime error en consola para depuración si no halla la imagen
+        print(f"Error: Imagen no encontrada en {full_path}")
     return ""
 
 st.set_page_config(page_title="Generador de PDFs", page_icon="📄")
@@ -159,7 +170,6 @@ cliente_seleccionado = st.selectbox("1. Selecciona el cliente:", opciones_menu)
 
 archivo_subido = st.file_uploader("2. Sube el archivo Excel aquí:", type=["xlsx", "xls"])
 
-# ---> LA ÚNICA LÍNEA NUEVA: SELECTOR DE FECHA <---
 fecha_seleccionada = st.date_input(
     "3. Selecciona la fecha para el reporte:", 
     value=datetime.date.today(), 
@@ -294,9 +304,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
             color_fecha = "#333333" if fecha_oscura else "rgba(255, 255, 255, 0.9)"
             shadow_fecha = "none" if fecha_oscura else "1px 1px 2px rgba(0,0,0,0.5)"
             
-            # ---> AQUÍ TOMAMOS LA FECHA QUE ELEGISTE EN EL SELECTOR <---
             fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
+            # ---> CSS MODIFICADO: ELIMINADOS LOS BORDES GRISES Y SOMBRAS DE LA TABLA <---
             html_template = f"""
             <!DOCTYPE html>
             <html>
@@ -341,14 +351,13 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     .table-wrapper {{
                         border-radius: 8px;
                         overflow: hidden;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         background-color: white;
+                        /* Eliminamos box-shadow para quitar bordes raros */
                     }}
                     
                     .data-table {{ 
                         width: 100%; 
                         border-collapse: collapse; 
-                        border-style: hidden; 
                     }}
                     
                     .data-table th {{ 
@@ -365,7 +374,8 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     .data-table td {{ 
                         padding: 6px; 
                         font-size: 7.5pt; 
-                        border: 1px solid #E5E7EB; 
+                        /* Eliminamos el borde gris: border: 1px solid #E5E7EB; */
+                        border: none;
                         color: #4b5563; 
                         font-weight: 400;
                     }}
