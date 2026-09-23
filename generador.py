@@ -159,6 +159,13 @@ cliente_seleccionado = st.selectbox("1. Selecciona el cliente:", opciones_menu)
 
 archivo_subido = st.file_uploader("2. Sube el archivo Excel aquí:", type=["xlsx", "xls"])
 
+# ---> LA ÚNICA LÍNEA NUEVA: SELECTOR DE FECHA <---
+fecha_seleccionada = st.date_input(
+    "3. Selecciona la fecha para el reporte:", 
+    value=datetime.date.today(), 
+    format="DD/MM/YYYY"
+)
+
 if st.button("Procesar y Generar PDF", type="primary"):
     if cliente_seleccionado == "-- Selecciona un cliente --":
         st.error("⚠️ Por favor, selecciona un cliente del menú desplegable antes de continuar.")
@@ -286,7 +293,9 @@ if st.button("Procesar y Generar PDF", type="primary"):
             
             color_fecha = "#333333" if fecha_oscura else "rgba(255, 255, 255, 0.9)"
             shadow_fecha = "none" if fecha_oscura else "1px 1px 2px rgba(0,0,0,0.5)"
-            fecha_actual = datetime.date.today().strftime('%d/%m/%Y')
+            
+            # ---> AQUÍ TOMAMOS LA FECHA QUE ELEGISTE EN EL SELECTOR <---
+            fecha_actual = fecha_seleccionada.strftime('%d/%m/%Y')
             
             html_template = f"""
             <!DOCTYPE html>
