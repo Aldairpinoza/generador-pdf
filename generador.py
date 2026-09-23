@@ -39,9 +39,13 @@ CONFIG_CLIENTES = {
     },
     "OMNIDATA": {
         "logo": "logos/omnidata.png", 
-        "color_principal": "#0056b3", 
-        "color_secundario": "#003d82",
-        "logo_height": "140px" 
+        "color_principal": "#666666", 
+        "color_secundario": "#FFFFFF", 
+        "color_tabla": "#333333", 
+        "logo_height": "140px",
+        "texto_oscuro": True, 
+        "fecha_oscura": True, 
+        "header_bg": "linear-gradient(135deg, #666666 0%, #FFFFFF 100%)"
     },
     "Andares": {
         "logo": "logos/andares.png", 
@@ -138,8 +142,24 @@ def get_base64_image(file_path):
     base_dir = os.path.dirname(__file__) if "__file__" in locals() else os.getcwd()
     full_path = os.path.join(base_dir, file_path)
     
+    # Búsqueda Insensible a Mayúsculas/Minúsculas en Linux
+    if not os.path.exists(full_path):
+        dirname, filename = os.path.split(full_path)
+        if os.path.exists(dirname):
+            for f in os.listdir(dirname):
+                if f.lower() == filename.lower():
+                    full_path = os.path.join(dirname, f)
+                    break
+
     if not os.path.exists(full_path):
         full_path = file_path
+        if not os.path.exists(full_path):
+            dirname, filename = os.path.split(full_path)
+            if os.path.exists(dirname):
+                for f in os.listdir(dirname):
+                    if f.lower() == filename.lower():
+                        full_path = os.path.join(dirname, f)
+                        break
 
     if os.path.exists(full_path):
         with open(full_path, "rb") as img_file:
@@ -216,7 +236,6 @@ if st.button("Procesar y Generar PDF", type="primary"):
                                     if len(rgb) == 8: hex_val = "#" + rgb[2:]
                                     elif len(rgb) == 6: hex_val = "#" + rgb
                                     
-                                    # Filtrar estrictamente solo colores rojos u orígenes de alerta reales
                                     if hex_val and hex_val.upper() in ["#FF0000", "#C00000", "#ED7D31", "#E31837", "#DC2626", "#D97706"]:
                                         is_alert = True
                                 
