@@ -177,7 +177,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
         st.error("⚠️ Por favor, sube un archivo Excel.")
     else:
         if archivo_subido.name.lower().endswith('.xls'):
-            st.warning("⚠️ **AVISO IMPORTANTE:** Subiste un archivo con formato antiguo (`.xls`). El sistema no podrá detectar los textos de colores. Guarda el archivo como 'Libro de Excel (.xlsx)' para conservar los colores.")
+            st.warning("⚠️ **AVISO IMPORTANTE:** Subiste un archivo con formato antiguo (`.xls`). Guarda como `.xlsx` para conservar los colores de alerta.")
             
         with st.spinner("Aplicando diseño corporativo y leyendo el archivo..."):
             
@@ -191,11 +191,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
             color_tabla = datos_cliente.get("color_tabla", color_header) 
             alto_logo = datos_cliente.get("logo_height", "140px") 
             
-            # Rojo limpio de alerta para encabezados oscuros
-            if color_tabla in ["#000000", "#1a1a1a", "#515151", "#333333"]:
-                color_alerta_final = "#DC2626" 
-            else:
-                color_alerta_final = color_header 
+            color_alerta_final = "#DC2626" 
             
             img_tag_cliente = f'<img src="{logo_cliente}" style="height: {alto_logo}; background: transparent !important; display: block; margin: 0 auto;">' if logo_cliente else ''
             img_tag_admira = f'<img src="{logo_admira}" style="height: 55px; margin-bottom: 2px; background: transparent !important; display: block; margin-left: auto;">' if logo_admira else ''
@@ -220,13 +216,8 @@ if st.button("Procesar y Generar PDF", type="primary"):
                                     if len(rgb) == 8: hex_val = "#" + rgb[2:]
                                     elif len(rgb) == 6: hex_val = "#" + rgb
                                     
-                                    # Filtramos colores negros, grises oscuros y blancos estándar de Excel
-                                    if hex_val and hex_val.upper() not in ["#000000", "#FFFFFF", "#00000000", "#333333", "#4B5563", "#111111", "#515151"]:
-                                        is_alert = True
-                                        
-                                elif color_obj.type == 'theme':
-                                    # Temas 0, 1, 2, 3 son los colores neutros predeterminados de Excel
-                                    if color_obj.theme not in [0, 1, 2, 3]:
+                                    # Filtrar estrictamente solo colores rojos u orígenes de alerta reales
+                                    if hex_val and hex_val.upper() in ["#FF0000", "#C00000", "#ED7D31", "#E31837", "#DC2626", "#D97706"]:
                                         is_alert = True
                                 
                                 if is_alert:
@@ -308,7 +299,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
                     
                     @page {{ size: A4 landscape; margin: 0; }}
                     
-                    body {{ font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; color: #333; background-color: #FAFAFA; }}
+                    body {{ font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; color: #111111; background-color: #FAFAFA; }}
                     
                     .header-container {{ 
                         background: {fondo_custom};
@@ -367,7 +358,7 @@ if st.button("Procesar y Generar PDF", type="primary"):
                         padding: 6px; 
                         font-size: 7.5pt; 
                         border: 1px solid #E5E7EB; 
-                        color: #4b5563; 
+                        color: #111111; 
                         font-weight: 400;
                     }}
                     
